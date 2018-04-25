@@ -55,7 +55,7 @@ core_vendor=core/vendor
 
 core_doc_files=AUTHORS COPYING README.md
 core_src_files=$(wildcard *.php) index.html db_structure.xml .htaccess .user.ini robots.txt
-core_src_dirs=apps core l10n lib occ ocs ocs-provider resources settings
+core_src_dirs=apps apps-external core l10n lib occ ocs ocs-provider resources settings
 core_test_dirs=tests
 core_all_src=$(core_src_files) $(core_src_dirs) $(core_doc_files)
 dist_dir=build/dist
@@ -241,7 +241,7 @@ $(dist_dir)/owncloud: $(composer_deps) $(nodejs_deps) $(core_all_src)
 	rm -Rf $@/settings/tests
 	rm -Rf $@/core/vendor/*/{.bower.json,bower.json,package.json,testem.json}
 	find $@/{core/,l10n/} -iname \*.sh -delete
-	find $@/{apps/,lib/composer/,core/vendor/} \( \
+	find $@/{apps/,apps-external/,lib/composer/,core/vendor/} \( \
 		-name bin -o \
 		-name test -o \
 		-name tests -o \
@@ -252,7 +252,7 @@ $(dist_dir)/owncloud: $(composer_deps) $(nodejs_deps) $(core_all_src)
 		-name travis -o \
 		-iname \*.sh \
 		\) -print | xargs rm -Rf
-	find $@/{apps/,lib/composer/} -iname \*.exe -delete
+	find $@/{apps/,apps-external/,lib/composer/} -iname \*.exe -delete
 	# Set build
 	$(eval _BUILD="$(shell date -u --iso-8601=seconds) $(shell git rev-parse HEAD)")
 	# Replace channel in version.php
@@ -291,7 +291,7 @@ $(dist_dir)/qa/owncloud: $(composer_dev_deps) $(nodejs_deps) $(core_all_src) $(c
 	find $@ -name no-php -delete
 	rm -Rf $@/core/vendor/*/{.bower.json,bower.json,package.json,testem.json}
 	find $@/{core/,l10n/} -iname \*.sh -delete
-	find $@/{apps/,lib/composer/,core/vendor/} \( \
+	find $@/{apps/,apps-external/,lib/composer/,core/vendor/} \( \
 		-name test -o \
 		-name examples -o \
 		-name demo -o \
@@ -300,7 +300,7 @@ $(dist_dir)/qa/owncloud: $(composer_dev_deps) $(nodejs_deps) $(core_all_src) $(c
 		-name travis -o \
 		-iname \*.sh \
 		\) -print | xargs rm -Rf
-	find $@/{apps/,lib/composer/} -iname \*.exe -delete
+	find $@/{apps/,apps-external/,lib/composer/} -iname \*.exe -delete
 	# Set build
 	$(eval _BUILD="$(shell date -u --iso-8601=seconds) $(shell git rev-parse HEAD)")
 	# Replace channel in version.php
