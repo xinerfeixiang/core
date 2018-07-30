@@ -75,8 +75,8 @@ class SessionCredentials extends AuthMechanism {
 		}
 
 		$credentials = \json_decode($this->crypto->decrypt($encrypted), true);
-		if ($this->session->exists('samaccountname')) {
-			$storage->setBackendOption('user', $this->session->get('samaccountname'));
+		if ($this->session->exists('altloginname')) {
+			$storage->setBackendOption('user', $this->session->get('altloginname'));
 		} else {
 			$storage->setBackendOption('user', $this->session->get('loginname'));
 		}
