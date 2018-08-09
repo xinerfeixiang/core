@@ -271,6 +271,7 @@ OC.FileUpload.prototype = {
 
 		// wait for creation of the required directory before uploading
 		$.when(folderPromise, chunkFolderPromise).then(function() {
+			console.log('submitting upload');
 			data.submit();
 		}, function() {
 			self.abort();
@@ -329,6 +330,7 @@ OC.FileUpload.prototype = {
 	 * retry the upload
 	 */
 	retry: function() {
+		console.log('isStalled: ' + this.data.stalled);
 		if (!this.data.stalled) {
 			console.log('Retrying upload ' + this.id);
 			this.data.stalled = true;
@@ -750,7 +752,7 @@ OC.Uploader.prototype = _.extend({
 		// resubmit upload
 		this.submitUploads([upload]);
 	},
-	_trace:false, //TODO implement log handler for JS per class?
+	_trace:true, //TODO implement log handler for JS per class?
 	log:function(caption, e, data) {
 		if (this._trace) {
 			console.log(caption);
@@ -835,6 +837,8 @@ OC.Uploader.prototype = _.extend({
 	_updateProgressBar: function() {
 		var progress = parseInt(this.$uploadprogressbar.attr('data-loaded'), 10);
 		var total = parseInt(this.$uploadprogressbar.attr('data-total'), 10);
+		console.log('_updateProgressBar: ' + progress + ' of ' + total);
+		console.log('_updateProgressBar: this._lastProgressTime ' + this._lastProgressTime + ' elapsed ms ' + (new Date().getTime() - this._lastProgressTime + " will time out after " + (this._uploadStallTimeout * 1000)));
 		if (progress !== this._lastProgress) {
 			this._lastProgress = progress;
 			this._lastProgressTime = new Date().getTime();
@@ -846,9 +850,11 @@ OC.Uploader.prototype = _.extend({
 				// TODO: move to "fileuploadprogress" event instead and use data.uploadedBytes
 				// stalling needs to be checked here because the file upload no longer triggers events
 				// restart upload
+				console.log('progress stalled');
 				this.log('progress stalled'); // retry chunk (and prevent IE from dying)
 				_.each(this._uploads, function(upload) {
 					// FIXME: harden by only retry pending, not the finished ones
+					console.log('retrying upload with id ' + upload.getId() + ' and file ' + upload.getFileName());
 					upload.retry();
 				});
 			}
@@ -906,6 +912,8 @@ OC.Uploader.prototype = _.extend({
 		if (options.uploadStallTimeout) {
 			this._uploadStallTimeout = options.uploadStallTimeout;
 		}
+		console.log('config: uploadStallTimeout: ' + this._uploadStallTimeout + ' seconds');
+		console.log('config: uploadStallRetries: ' + (options.uploadStallRetries || 3));
 
 		$uploadEl = $($uploadEl);
 		this.$uploadEl = $uploadEl;
@@ -1087,14 +1095,16 @@ OC.Uploader.prototype = _.extend({
 					$('#upload').tipsy('hide');
 				},
 				fail: function(e, data) {
+					self.log('failure detected');
 					var upload = self.getUpload(data);
 					if (upload && upload.data && upload.data.stalled) {
-						self.log('retry', e, upload);
+						self.log('retrying stalled upload', e, upload);
 						// jQuery Widget Factory uses "namespace-widgetname" since version 1.10.0:
 						var fu = $(this).data('blueimp-fileupload') || $(this).data('fileupload'),
 							retries = upload.data.retries || 0,
 							retry = function () {
 								var uid = OC.getCurrentUser().uid;
+								console.log('getting list of already uploaded chunks');
 								upload.uploader.davClient.getFolderContents(
 									'uploads/' + uid + '/' + upload.getId()
 								)
@@ -1110,12 +1120,14 @@ OC.Uploader.prototype = _.extend({
 											data.uploadedBytes += file.size;
 										}
 									});
+									console.log('total uploaded bytes so far: ' + data.uploadedBytes);
 
 									// clear the previous data:
 									upload.data.stalled = false;
 									data.data = null;
 									// overwrite chunk
 									delete data.headers['If-None-Match'];
+									console.log('resubmitting upload');
 									data.submit();
 								})
 								.fail(function (status, ex) {
@@ -1123,14 +1135,20 @@ OC.Uploader.prototype = _.extend({
 									fu._trigger('fail', e, data);
 								});
 							};
+						console.log('uploadedBytes: ' + data.uploadedBytes);
+						console.log('file size: ' + data.files[0].size);
+						console.log('retries ' + retries + ' of ' + fu.options.maxRetries);
 						if (upload && upload.data && upload.data.stalled &&
 							data.uploadedBytes < data.files[0].size &&
 							retries < fu.options.maxRetries) {
+
 							retries += 1;
 							upload.data.retries = retries;
+							console.log('initiating next retry in ' + (retries * fu.options.retryTimeout) + ' ms');
 							window.setTimeout(retry, retries * fu.options.retryTimeout);
 							return;
 						}
+						console.log('fail, aborting');
 						fu.prototype
 							.options.fail.call(this, e, data);
 						return;
@@ -1207,6 +1225,8 @@ OC.Uploader.prototype = _.extend({
 			if (options.maxChunkSize) {
 				this.fileUploadParam.maxChunkSize = options.maxChunkSize;
 			}
+
+			console.log('config: maxChunkSize=' + this.fileUploadParam.maxChunkSize);
 
 			// initialize jquery fileupload (blueimp)
 			var fileupload = this.$uploadEl.fileupload(this.fileUploadParam);
@@ -1297,6 +1317,7 @@ OC.Uploader.prototype = _.extend({
 
 				fileupload.on('fileuploadchunksend', function(e, data) {
 					// modify the request to adjust it to our own chunking
+					console.log('fileuploadchunksend: ' + data.contentRange);
 					var upload = self.getUpload(data);
 					var range = data.contentRange.split(' ')[1];
 					var chunkId = range.split('/')[0].split('-')[0];
@@ -1312,9 +1333,11 @@ OC.Uploader.prototype = _.extend({
 					upload.data.retries = 0;
 				});
 				fileupload.on('fileuploadchunkdone', function(e, data) {
+					console.log('fileuploadchunkdone');
 					$(data.xhr().upload).unbind('progress');
 				});
 				fileupload.on('fileuploaddone', function(e, data) {
+					console.log('fileuploaddone');
 					var upload = self.getUpload(data);
 					upload.done().then(function() {
 						self.trigger('done', e, upload);
