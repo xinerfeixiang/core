@@ -76,14 +76,39 @@ class SessionCredentials extends AuthMechanism {
 
 		$credentials = \json_decode($this->crypto->decrypt($encrypted), true);
 		if ($this->session->exists('altloginname')) {
-			$storage->setBackendOption('user', $this->session->get('altloginname'));
+			$backendUser = $this->session->get('altloginname');
 		} else {
-			$storage->setBackendOption('user', $this->session->get('loginname'));
+			$backendUser = $this->session->get('loginname');
 		}
+		$storage->setBackendOption('user', $backendUser);
 		$storage->setBackendOption('password', $credentials['password']);
+
+		foreach ($storage->getBackendOptions() as $option => $value) {
+			$storage->setBackendOption($option, $this->setVars(
+				$backendUser, $value
+			));
+		}
 	}
 
 	public function wrapStorage(Storage\IStorage $storage) {
 		return new SessionStorageWrapper(['storage' => $storage]);
+	}
+
+	private function setVars($user, $input) {
+		if ($this->session->exists('altloginname')) {
+			$user = $this->session->get('altloginname');
+		}
+		if (\is_array($input)) {
+			foreach ($input as $key => $value) {
+				if (\is_string($value)) {
+					$input[$key] = \str_replace('$altloginname', $user, $value);
+				}
+			}
+		} else {
+			if (\is_string($input)) {
+				$input = \str_replace('$altloginname', $user, $input);
+			}
+		}
+		return $input;
 	}
 }

@@ -37,7 +37,6 @@ use OC\Files\Storage\FailedStorage;
 use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
 use OCP\Files\ObjectStore\IObjectStore;
-use OCP\ISession;
 
 /**
  * Make the old files_external config work with the new public mount config api
@@ -53,9 +52,6 @@ class ConfigAdapter implements IMountProvider {
 	/** @var IUserGlobalStoragesService */
 	private $userGlobalStoragesService;
 
-	/** @var ISession */
-	private $session;
-
 	/**
 	 * @param IConfig $config
 	 * @param IUserStoragesService $userStoragesService
@@ -64,13 +60,11 @@ class ConfigAdapter implements IMountProvider {
 	public function __construct(
 		IConfig $config,
 		IUserStoragesService $userStoragesService,
-		IUserGlobalStoragesService $userGlobalStoragesService,
-		ISession $session
+		IUserGlobalStoragesService $userGlobalStoragesService
 	) {
 		$this->config = $config;
 		$this->userStoragesService = $userStoragesService;
 		$this->userGlobalStoragesService = $userGlobalStoragesService;
-		$this->session = $session;
 	}
 
 	/**
@@ -205,9 +199,6 @@ class ConfigAdapter implements IMountProvider {
 	 * @return string
 	 */
 	private function setUserVars($user, $input) {
-		if ($this->session->exists('altloginname')) {
-			$user = $this->session->get('altloginname');
-		}
 		if (\is_array($input)) {
 			foreach ($input as $key => $value) {
 				if (\is_string($value)) {

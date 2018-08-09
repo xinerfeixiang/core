@@ -163,9 +163,6 @@ class LegacyUtil {
 	 * @return string
 	 */
 	public static function setUserVars($user, $input) {
-		if (\OC::$server->getSession()->exists('altloginname')) {
-			$user = \OC::$server->getSession()->get('altloginname');
-		}
 		if (\is_array($input)) {
 			foreach ($input as $key => $value) {
 				if (\is_string($value)) {
