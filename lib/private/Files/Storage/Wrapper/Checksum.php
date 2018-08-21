@@ -93,7 +93,7 @@ class Checksum extends Wrapper {
 	}
 
 	public function file_put_contents($path, $data) {
-		$this->writeFile($path, stream_for($data));
+		return $this->writeFile($path, stream_for($data));
 	}
 
 	public function writeFile(string $path, StreamInterface $stream) : int {
