@@ -10,41 +10,6 @@ clone:
     depth: 50
 
 pipeline:
-  install-fed-server:
-    image: owncloudci/core
-    pull: true
-    version: ${FEDERATION_OC_VERSION}
-    core_path: /drone/fed-server
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
-
-  configure-federation-server:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    commands:
-      - cd /drone/fed-server
-      - php occ a:l
-      - php occ a:e testing
-      - php occ a:l
-      - php occ config:system:set trusted_domains 1 --value=server
-      - php occ config:system:set trusted_domains 2 --value=federated
-      - php occ log:manage --level 0
-      - php occ config:list
-      - echo "export TEST_SERVER_FED_URL=http://federated" > /drone/saved-settings.sh
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
-
-  fix-permissions-federation-server:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    commands:
-      - chown www-data /drone/fed-server -R
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
-
   restore:
     image: plugins/s3-cache:1
     pull: true
@@ -322,25 +287,14 @@ pipeline:
       matrix:
         OWNCLOUD_LOG: true
 
-  federated-log:
-    image: owncloud/ubuntu:16.04
-    detach: true
-    pull: true
-    commands:
-      - tail -f /drone/fed-server/data/owncloud.log
-    when:
-      matrix:
-        OWNCLOUD_LOG: true
-        USE_FEDERATED_SERVER: true
-
   api-acceptance-tests:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
     environment:
       - TEST_SERVER_URL=http://server
+      - TEST_FEDERATION=${TEST_FEDERATION}
     commands:
-      - touch /drone/saved-settings.sh
-      - . /drone/saved-settings.sh
+      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://federated"; fi
       - ./tests/drone/test-acceptance.sh --remote
     when:
       matrix:
@@ -356,9 +310,9 @@ pipeline:
       - TEST_SERVER_URL=http://server
       - PLATFORM=Linux
       - MAILHOG_HOST=email
+      - TEST_FEDERATION=${TEST_FEDERATION}
     commands:
-      - touch /drone/saved-settings.sh
-      - . /drone/saved-settings.sh
+      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://federated"; fi
       - ./tests/drone/test-acceptance.sh --remote
     when:
       matrix:
@@ -464,14 +418,14 @@ services:
         USE_SERVER: true
 
   federated:
-    image: owncloudci/php:${PHP_VERSION}
+    image: owncloud/server
     pull: true
     environment:
-      - APACHE_WEBROOT=/drone/fed-server/
-    command: [ "/usr/local/bin/apachectl", "-e", "debug" , "-D", "FOREGROUND" ]
+      - OWNCLOUD_APPS_INSTALL=https://github.com/owncloud/testing/releases/download/latest/testing.tar.gz
+      - OWNCLOUD_APPS_ENABLE=testing
     when:
       matrix:
-        USE_FEDERATED_SERVER: true
+        TEST_FEDERATION: true
 
   apache_webdav:
     image: owncloudci/php
@@ -701,8 +655,7 @@ matrix:
       BEHAT_SUITE: apiFederation
       DB_TYPE: mariadb
       USE_SERVER: true
-      USE_FEDERATED_SERVER: true
-      FEDERATION_OC_VERSION: daily-stable10-qa
+      TEST_FEDERATION: true
       INSTALL_SERVER: true
       CHOWN_SERVER: true
       OWNCLOUD_LOG: true
@@ -897,8 +850,7 @@ matrix:
       BEHAT_SUITE: webUISharingExternal
       DB_TYPE: mariadb
       USE_SERVER: true
-      USE_FEDERATED_SERVER: true
-      FEDERATION_OC_VERSION: daily-stable10-qa
+      TEST_FEDERATION: trues
       INSTALL_SERVER: true
       CHOWN_SERVER: true
       OWNCLOUD_LOG: true
