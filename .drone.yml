@@ -106,6 +106,32 @@ pipeline:
       matrix:
         INSTALL_SERVER: true
 
+  federated:
+    image: toolhippie/docker:latest
+    pull: true
+    detach: true
+    environment:
+      - DOCKER_HOST=tcp://docker:2375
+    commands:
+      - |
+        docker run -p 8000:80 \
+        -e DEBUG=true \
+        -e OWNCLOUD_APPS_INSTALL=https://github.com/owncloud/testing/releases/download/latest/testing.tar.gz \
+        -e OWNCLOUD_APPS_ENABLE=testing \
+        owncloud/server:latest
+    when:
+      matrix:
+        TEST_FEDERATION: true
+
+  wait-for-federated-server:
+    image: owncloud/ubuntu:latest
+    pull: true
+    commands:
+      - wait-for-it -t 600 docker:8000
+    when:
+      matrix:
+        TEST_FEDERATION: true
+
   prepare-objectstore:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
@@ -294,7 +320,7 @@ pipeline:
       - TEST_SERVER_URL=http://server
       - TEST_FEDERATION=${TEST_FEDERATION}
     commands:
-      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://federated"; fi
+      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://docker:8000"; fi
       - ./tests/drone/test-acceptance.sh --remote
     when:
       matrix:
@@ -312,7 +338,7 @@ pipeline:
       - MAILHOG_HOST=email
       - TEST_FEDERATION=${TEST_FEDERATION}
     commands:
-      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://federated"; fi
+      - if [ "${TEST_FEDERATION}" != "" ]; then export TEST_SERVER_FED_URL="http://docker:8000"; fi
       - ./tests/drone/test-acceptance.sh --remote
     when:
       matrix:
@@ -417,12 +443,8 @@ services:
       matrix:
         USE_SERVER: true
 
-  federated:
-    image: owncloud/server
-    pull: true
-    environment:
-      - OWNCLOUD_APPS_INSTALL=https://github.com/owncloud/testing/releases/download/latest/testing.tar.gz
-      - OWNCLOUD_APPS_ENABLE=testing
+  docker:
+    image: docker:18.04-dind
     when:
       matrix:
         TEST_FEDERATION: true
