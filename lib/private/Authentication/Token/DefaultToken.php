@@ -91,7 +91,7 @@ class DefaultToken extends Entity implements IToken {
 	 * @return string
 	 */
 	public function getLoginName() {
-		return parent::getLoginName();
+		return parent::getter('loginName');
 	}
 
 	/**
@@ -100,7 +100,7 @@ class DefaultToken extends Entity implements IToken {
 	 * @return string
 	 */
 	public function getPassword() {
-		return parent::getPassword();
+		return parent::getter('password');
 	}
 
 	public function jsonSerialize() {
@@ -119,7 +119,7 @@ class DefaultToken extends Entity implements IToken {
 	 * @return int
 	 */
 	public function getLastCheck() {
-		return parent::getLastCheck();
+		return parent::getter('lastCheck');
 	}
 
 	/**
@@ -128,7 +128,7 @@ class DefaultToken extends Entity implements IToken {
 	 * @param int $time
 	 */
 	public function setLastCheck($time) {
-		parent::setLastCheck($time);
+		parent::setter('lastCheck', $time);
 	}
 
 	/**
@@ -138,7 +138,7 @@ class DefaultToken extends Entity implements IToken {
 		if (\strlen($name) < 1) {
 			throw new \InvalidArgumentException();
 		}
-		parent::setName($name);
+		parent::setter('name', $name);
 	}
 
 	/**
@@ -148,6 +148,6 @@ class DefaultToken extends Entity implements IToken {
 		if (\strlen($loginName) < 1) {
 			throw new \InvalidArgumentException();
 		}
-		parent::setLoginName($loginName);
+		parent::setter('loginName', $loginName);
 	}
 }
