@@ -87,6 +87,7 @@ class ResetPassword extends Command {
 				$output->writeln(
 					'<error>Warning: Resetting the password when using encryption will result in data loss!</error>'
 				);
+				// @phan-suppress-next-line PhanUndeclaredMethod
 				if (!$dialog->ask($input, $output, new Question('<question>Do you want to continue?</question>', true))) {
 					return 1;
 				}
@@ -94,6 +95,7 @@ class ResetPassword extends Command {
 
 			$q = new Question('<question>Enter a new password: </question>', false);
 			$q->setHidden(true);
+			// @phan-suppress-next-line PhanUndeclaredMethod
 			$password = $dialog->ask($input, $output, $q);
 			if ($password === false) {
 				// When user presses RETURN key or no password characters are entered,
@@ -103,6 +105,7 @@ class ResetPassword extends Command {
 			}
 			$q = new Question('<question>Confirm the new password: </question>', false);
 			$q->setHidden(true);
+			// @phan-suppress-next-line PhanUndeclaredMethod
 			$confirm = $dialog->ask($input, $output, $q);
 			if ($password !== $confirm) {
 				$output->writeln("<error>Passwords did not match!</error>");
