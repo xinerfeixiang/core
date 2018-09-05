@@ -154,7 +154,7 @@ class Mailer implements IMailer {
 		} else {
 			$domain = idn_to_ascii($domain);
 		}
-			return $name.'@'.$domain;
+		return $name.'@'.$domain;
 	}
 
 	/**
