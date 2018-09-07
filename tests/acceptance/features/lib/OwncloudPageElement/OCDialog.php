@@ -75,7 +75,7 @@ class OCDialog extends OwncloudPage {
 	 * @throws ElementNotFoundException
 	 * @return string
 	 */
-	public function getTitle() {
+	public function getPageTitle() {
 		$title = $this->dialogElement->find("xpath", $this->titleClassXpath);
 		if ($title === null) {
 			throw new ElementNotFoundException(
